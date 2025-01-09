@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum UserRole {
+  ADMIN
+  EXHIBITOR
+}
+
+enum BoothStatus {
+  AVAILABLE
+  RESERVED
+  BOOKED
+}
+
+model Company {
+  id                 String    @id @default(uuid())
+  name               String
+  registrationNumber String    @unique
+  email              String    @unique
+  phone              String
+  address            String?
+  verified           Boolean   @default(false)
+  users              User[]
+  bookings           Booking[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("companies")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId String
+  role      UserRole @default(EXHIBITOR)
+  createdAt DateTime @default(now())
+
+  firstName String?
+  lastName  String?
+  isActive  Boolean @default(true)
+
+  @@map("users")
+}
+
+model BoothType {
+  id        String   @id @default(uuid())
+  name      String
+  size      String
+  price     Decimal
+  features  Json
+  booths    Booth[]
+  createdAt DateTime @default(now())
+
+  @@map("booth_types")
+}
+
+model Booth {
+  id          String      @id @default(uuid())
+  boothNumber String      @unique
+  type        BoothType   @relation(fields: [typeId], references: [id])
+  typeId      String
+  locationX   Int
+  locationY   Int
+  status      BoothStatus @default(AVAILABLE)
+  booking     Booking?
+  createdAt   DateTime    @default(now())
+
+  @@map("booths")
+}
+
+model Booking {
+  id            String   @id @default(uuid())
+  booth         Booth    @relation(fields: [boothId], references: [id])
+  boothId       String   @unique
+  company       Company  @relation(fields: [companyId], references: [id])
+  companyId     String
+  paymentStatus String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("bookings")
+}
